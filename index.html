@@ -191,7 +191,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <div id="app">
   <div class="header">
     <div class="logo">IRON<span>LOG</span></div>
-    <div class="streak">🔥 <span id="streak-count">0</span>日連続</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="streak">🔥 <span id="streak-count">0</span>日連続</div>
+      <div onclick="openSettings()" style="width:32px;height:32px;border-radius:50%;background:var(--card);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer" title="設定">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </div>
+    </div>
   </div>
   <div class="nav">
     <div class="nav-tab active" data-tab="home" onclick="switchTab('home')">
@@ -444,18 +449,31 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <!-- PHOTO FULLSCREEN -->
   <div style="position:absolute;inset:0;background:#000;z-index:150;flex-direction:column;display:none" id="photo-full-overlay">
     <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
-      <div class="cam-close" onclick="closePhotoFull()">✕</div>
+      <div class="cam-close" onclick="closePhotoFull()">&#x2715;</div>
       <div style="font-size:14px;font-weight:600;flex:1;color:var(--text)" id="photo-full-title"></div>
     </div>
     <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden">
       <img id="photo-full-img" style="max-width:100%;max-height:100%;object-fit:contain" alt="">
     </div>
   </div>
+
+  <!-- SETTINGS PANEL -->
+  <div class="panel-overlay hidden" id="settings-overlay" onclick="closeSettingsIfBg(event)">
+    <div class="panel" style="padding-bottom:40px">
+      <div class="panel-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="panel-title" style="margin-bottom:0">設定</div>
+        <div onclick="closeSettings()" style="font-size:13px;color:var(--muted);cursor:pointer">閉じる</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">非表示にした項目</div>
+      <div id="settings-hidden-list"></div>
+    </div>
+  </div>
 </div>
 
 <script>
 // ===================== DB =====================
-const DB_NAME = 'ironlog_db', DB_VER = 4;
+const DB_NAME = 'ironlog_db', DB_VER = 5;
 let db;
 
 function openDB() {
@@ -463,7 +481,7 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VER);
     req.onupgradeneeded = e => {
       const d = e.target.result;
-      ['logs','photos','body','exercises','muscles','notes'].forEach(s => {
+      ['logs','photos','body','exercises','muscles','notes','hidden'].forEach(s => {
         if (!d.objectStoreNames.contains(s))
           d.createObjectStore(s, {keyPath:'id', autoIncrement:true});
       });
@@ -523,10 +541,16 @@ let panelSets = [{w:'',r:''}];
 let noteTimer = null;
 let timerSec = 90, timerMax = 90, timerRunning = false, timerInterval = null;
 let camStream = null, camFacing = 'user', capturedDataURL = null, camType = 'front';
-let allLogs = [], allPhotos = [], allBody = [], allCustomExercises = [], allCustomMuscles = [], allNotes = [];
+let allLogs = [], allPhotos = [], allBody = [], allCustomExercises = [], allCustomMuscles = [], allNotes = [], allHidden = [];
 
-function getAllMuscles() { return [...DEFAULT_MUSCLES, ...allCustomMuscles.map(m=>m.name)]; }
-function getAllExercises() { return [...DEFAULT_EXERCISES, ...allCustomExercises]; }
+// allHidden: [{id, type:'muscle'|'exercise', name}]
+function isHidden(type, name) { return allHidden.some(h => h.type === type && h.name === name); }
+function getAllMuscles() {
+  return [...DEFAULT_MUSCLES, ...allCustomMuscles.map(m=>m.name)].filter(m => !isHidden('muscle', m));
+}
+function getAllExercises() {
+  return [...DEFAULT_EXERCISES, ...allCustomExercises].filter(e => !isHidden('exercise', e.name));
+}
 // Get note for an exercise (by name, case-insensitive trim)
 function getNoteFor(name) {
   const n = allNotes.find(n => n.exercise === name);
@@ -536,8 +560,8 @@ function getNoteFor(name) {
 // ===================== INIT =====================
 async function init() {
   await openDB();
-  [allLogs, allPhotos, allBody, allCustomExercises, allCustomMuscles, allNotes] =
-    await Promise.all(['logs','photos','body','exercises','muscles','notes'].map(dbGetAll));
+  [allLogs, allPhotos, allBody, allCustomExercises, allCustomMuscles, allNotes, allHidden] =
+    await Promise.all(['logs','photos','body','exercises','muscles','notes','hidden'].map(dbGetAll));
   renderAll();
 }
 
@@ -621,25 +645,24 @@ function renderMuscleTags() {
   const tags = [
     `<div class="mtag${currentMuscle==='全て'?' sel':''}" onclick="filterMuscle(this,'全て')">全て</div>`,
     ...muscles.map(m => {
-      const isCustom = allCustomMuscles.some(cm => cm.name === m);
       const sel = currentMuscle === m ? ' sel' : '';
-      // Use data attribute + JS event to avoid inline quote escaping issues
-      return `<div class="mtag mtag-item${sel}" data-muscle="${m.replace(/"/g,'&quot;')}">${m}${isCustom ? `<span class="mtag-del">×</span>` : ''}</div>`;
+      return `<div class="mtag mtag-item${sel}" data-muscle="${m.replace(/"/g,'&quot;')}">${m}<span class="mtag-del">×</span></div>`;
     }),
     `<div class="mtag-add" onclick="openAddMuscle()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>部位を追加
     </div>`
   ];
   row.innerHTML = tags.join('');
-  // attach events after render
   row.querySelectorAll('.mtag-item').forEach(tag => {
     const muscle = tag.dataset.muscle;
     tag.addEventListener('click', e => {
       if(e.target.classList.contains('mtag-del')) return;
       filterMuscle(tag, muscle);
     });
-    const del = tag.querySelector('.mtag-del');
-    if(del) del.addEventListener('click', e => { e.stopPropagation(); deleteMuscle(muscle); });
+    tag.querySelector('.mtag-del').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteMuscle(muscle);
+    });
   });
 }
 
@@ -650,20 +673,27 @@ function filterMuscle(el, muscle) {
 }
 
 async function deleteMuscle(name) {
-  const cm = allCustomMuscles.find(m => m.name === name);
-  if(!cm) return;
-  if(!confirm(`「${name}」を削除しますか？\nこの部位に登録されている種目はその他に移動します。`)) return;
-  await dbDelete('muscles', cm.id);
-  allCustomMuscles = allCustomMuscles.filter(m => m.name !== name);
-  // move exercises from this muscle to その他
-  for(const ex of allCustomExercises.filter(ex => ex.muscle === name)) {
-    ex.muscle = 'その他';
-    await dbPut('exercises', ex);
+  const isCustom = allCustomMuscles.some(m => m.name === name);
+  if(isCustom) {
+    // custom → confirm full delete, move exercises to その他
+    if(!confirm(`「${name}」を削除しますか？\nこの部位の種目はその他に移動します。`)) return;
+    const cm = allCustomMuscles.find(m => m.name === name);
+    await dbDelete('muscles', cm.id);
+    allCustomMuscles = allCustomMuscles.filter(m => m.name !== name);
+    for(const ex of allCustomExercises.filter(ex => ex.muscle === name)) {
+      ex.muscle = 'その他'; await dbPut('exercises', ex);
+    }
+  } else {
+    // default → hide (can be restored)
+    if(!confirm(`「${name}」を非表示にしますか？\n設定から元に戻せます。`)) return;
+    const rec = {type:'muscle', name, ts:Date.now()};
+    const id = await dbAdd('hidden', rec);
+    allHidden.push({...rec, id});
   }
   if(currentMuscle === name) currentMuscle = '全て';
   renderMuscleTags();
   renderExList();
-  showToast(`「${name}」を削除しました`);
+  showToast(`「${name}」を非表示にしました`);
 }
 
 function openAddMuscle() {
@@ -698,32 +728,53 @@ function renderExList() {
     const prevText = last ? last.sets.slice(0,3).map(s=>`${s.w}×${s.r}`).join(' / ') : '記録なし';
     const note = getNoteFor(e.name);
     const isCustom = !!e.id;
-    return `<div class="ex-item" style="position:relative">
-      <div style="cursor:pointer" onclick="openPanel('${esc(e.name)}')">
+    // encode name safely for data attribute
+    const safeName = e.name.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    return `<div class="ex-item ex-item-row" style="position:relative" data-name="${safeName}" data-custom="${isCustom}" data-id="${e.id||''}">
+      <div class="ex-item-tap" style="cursor:pointer;padding-right:36px">
         <div class="ex-item-hdr">
           <div class="ex-item-name">${e.name}</div>
-          <div class="ex-item-go" style="padding-right:${isCustom?'28px':'0'}">→ 記録</div>
+          <div class="ex-item-go">→ 記録</div>
         </div>
         <div class="ex-item-prev">前回：${prevText}</div>
         ${note?`<div class="ex-item-note">📝 ${note}</div>`:''}
       </div>
-      ${isCustom?`<div onclick="deleteExercise(${e.id},'${esc(e.name)}',event)"
-        style="position:absolute;top:50%;right:12px;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--surface);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);cursor:pointer">×</div>`:''}
+      <div class="ex-del-btn" title="非表示にする"
+        style="position:absolute;top:50%;right:12px;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--surface);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);cursor:pointer;flex-shrink:0">×</div>
     </div>`;
   });
   items.push(`<div class="ex-item" style="border-style:dashed;cursor:pointer;text-align:center" onclick="openAddExercise()">
     <div style="color:var(--accent);font-size:13px;font-weight:600">＋ 種目を追加</div>
   </div>`);
   el.innerHTML = items.join('');
+
+  // attach events safely (no inline quote issues)
+  el.querySelectorAll('.ex-item-row').forEach(row => {
+    const name = row.dataset.name;
+    const isCustom = row.dataset.custom === 'true';
+    const id = row.dataset.id ? parseInt(row.dataset.id) : null;
+    row.querySelector('.ex-item-tap').addEventListener('click', () => openPanel(name));
+    row.querySelector('.ex-del-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteExercise(name, isCustom, id);
+    });
+  });
 }
 
-async function deleteExercise(id, name, e) {
-  e.stopPropagation();
-  if(!confirm(`「${name}」を削除しますか？`)) return;
-  await dbDelete('exercises', id);
-  allCustomExercises = allCustomExercises.filter(ex=>ex.id!==id);
+async function deleteExercise(name, isCustom, id) {
+  if(isCustom) {
+    if(!confirm(`「${name}」を削除しますか？`)) return;
+    await dbDelete('exercises', id);
+    allCustomExercises = allCustomExercises.filter(ex => ex.id !== id);
+    showToast(`「${name}」を削除しました`);
+  } else {
+    if(!confirm(`「${name}」を非表示にしますか？\n設定から元に戻せます。`)) return;
+    const rec = {type:'exercise', name, ts:Date.now()};
+    const newId = await dbAdd('hidden', rec);
+    allHidden.push({...rec, id: newId});
+    showToast(`「${name}」を非表示にしました`);
+  }
   renderExList();
-  showToast('種目を削除しました');
 }
 
 function openAddExercise() {
@@ -1214,6 +1265,53 @@ function toggleTimer(){
 }
 function resetTimer(){ clearInterval(timerInterval);timerRunning=false;timerSec=timerMax;document.getElementById('timer-btn').textContent='スタート';document.getElementById('timer-display').style.color='var(--text)';updateTimerDisplay(); }
 function updateTimerDisplay(){ const m=Math.floor(timerSec/60),s=timerSec%60; document.getElementById('timer-display').textContent=m+':'+String(s).padStart(2,'0'); }
+
+// ===================== SETTINGS =====================
+function openSettings() {
+  renderSettingsHiddenList();
+  document.getElementById('settings-overlay').classList.remove('hidden');
+}
+function closeSettings() { document.getElementById('settings-overlay').classList.add('hidden'); }
+function closeSettingsIfBg(e) { if(e.target === document.getElementById('settings-overlay')) closeSettings(); }
+
+function renderSettingsHiddenList() {
+  const el = document.getElementById('settings-hidden-list');
+  if(!allHidden.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">非表示の項目はありません</div>';
+    return;
+  }
+  const muscles = allHidden.filter(h => h.type === 'muscle');
+  const exercises = allHidden.filter(h => h.type === 'exercise');
+  let html = '';
+  if(muscles.length) {
+    html += `<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">部位</div>`;
+    html += muscles.map(h => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:0.5px solid var(--border);border-radius:10px;margin-bottom:6px">
+        <div style="font-size:13px">${h.name}</div>
+        <button onclick="restoreHidden(${h.id})" class="tbtn" style="font-size:12px;padding:5px 12px;color:var(--success);border-color:var(--success)">元に戻す</button>
+      </div>`).join('');
+  }
+  if(exercises.length) {
+    html += `<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;margin-top:${muscles.length?'12px':'0'}">種目</div>`;
+    html += exercises.map(h => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:0.5px solid var(--border);border-radius:10px;margin-bottom:6px">
+        <div style="font-size:13px">${h.name}</div>
+        <button onclick="restoreHidden(${h.id})" class="tbtn" style="font-size:12px;padding:5px 12px;color:var(--success);border-color:var(--success)">元に戻す</button>
+      </div>`).join('');
+  }
+  el.innerHTML = html;
+}
+
+async function restoreHidden(id) {
+  const item = allHidden.find(h => h.id === id);
+  if(!item) return;
+  await dbDelete('hidden', id);
+  allHidden = allHidden.filter(h => h.id !== id);
+  renderSettingsHiddenList();
+  renderMuscleTags();
+  renderExList();
+  showToast(`「${item.name}」を再表示しました ✓`);
+}
 
 // ===================== UTILS =====================
 function dateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
