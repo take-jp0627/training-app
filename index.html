@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A0A0F">
+<title>IRONLOG</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0A0A0F;--surface:#13131C;--card:#1A1A28;--border:#2A2A40;
+  --accent:#FF6B2B;--accent2:#FF9A60;--text:#E0E0F0;--muted:#888899;
+  --success:#2ECC71;--danger:#E74C3C;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+.header{padding:14px 16px 10px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--border)}
+.logo{font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.logo span{color:var(--accent)}
+.streak{background:var(--card);border:0.5px solid var(--border);border-radius:20px;padding:5px 11px;font-size:12px;color:var(--accent2);display:flex;align-items:center;gap:4px}
+.nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.nav-tab{flex:1;padding:9px 4px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav-tab svg{width:18px;height:18px;stroke-width:2;fill:none;stroke:currentColor}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 14px 100px}
+.scroll-area::-webkit-scrollbar{display:none}
+.slabel{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;margin-top:14px}
+.slabel:first-child{margin-top:2px}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+.week-row{display:flex;gap:4px;margin-bottom:10px}
+.wday{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.wday-lbl{font-size:10px;color:var(--muted)}
+.wday-dot{width:30px;height:30px;border-radius:50%;background:var(--surface);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px}
+.wday-dot.done{background:var(--accent);border-color:var(--accent)}
+.wday-dot.today{border:1.5px solid var(--accent2)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:72px;margin:8px 0 4px}
+.bar-w{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar{width:100%;border-radius:4px 4px 0 0;background:var(--border);transition:background .2s;min-height:4px}
+.bar.hi{background:var(--accent)}
+.bar-lbl{font-size:9px;color:var(--muted)}
+.log-entry{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.log-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.log-name{font-size:14px;font-weight:600}
+.log-date{font-size:11px;color:var(--muted)}
+.set-row{display:flex;gap:6px;align-items:center;font-size:13px;padding:3px 0;border-bottom:0.5px solid var(--border)}
+.set-row:last-child{border-bottom:none}
+.sn{color:var(--muted);font-size:11px;width:22px;flex-shrink:0}
+.sv{color:var(--text)}.sp{color:var(--border)}.sb{color:var(--accent);font-weight:600}
+.pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.pr-card{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:11px;position:relative;overflow:hidden}
+.pr-card.is-pr{border-color:var(--accent)}
+.pr-card.is-pr::after{content:'PR';position:absolute;top:6px;right:8px;font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.5px}
+.pr-ex{font-size:11px;color:var(--muted);margin-bottom:5px}
+.pr-w{font-size:22px;font-weight:700;line-height:1}
+.pr-u{font-size:11px;color:var(--muted);margin-left:2px}
+.pr-r{font-size:11px;color:var(--muted);margin-top:3px}
+.pr-r span{color:var(--accent2);font-weight:600}
+.pbar-bg{background:var(--border);border-radius:6px;height:4px;overflow:hidden;margin-top:7px}
+.pbar-fill{height:100%;border-radius:6px;background:var(--accent);transition:width .3s}
+.timer-presets{display:flex;gap:5px;margin-bottom:8px}
+.tpbtn{flex:1;padding:6px 4px;border-radius:20px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;text-align:center;transition:all .15s}
+.tpbtn.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.timer-face{text-align:center;padding:8px 0 4px}
+.timer-num{font-size:40px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums;transition:color .3s}
+.timer-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.timer-btns{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.tbtn{padding:7px 20px;border-radius:20px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:all .15s}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.tbtn:active{transform:scale(0.96)}
+.month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.month-cell{aspect-ratio:1;border-radius:12px;background:var(--card);border:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;transition:border-color .15s;overflow:hidden;position:relative}
+.month-cell:hover{border-color:var(--accent)}
+.month-cell-lbl{font-size:11px;font-weight:600}
+.month-cell-count{font-size:10px;color:var(--accent2)}
+.month-cell-thumb{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.ba-wrap{display:flex;gap:8px;align-items:stretch}
+.ba-side{flex:1;text-align:center}
+.ba-frame{border-radius:12px;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:5px;border:0.5px solid var(--border);background:var(--surface)}
+.ba-frame.highlight{border:1.5px solid var(--accent)}
+.ba-meta{font-size:11px;color:var(--muted)}
+.ba-arrow{display:flex;align-items:center;color:var(--accent);font-size:22px;padding-top:20px}
+
+/* MUSCLE TAGS ROW */
+.muscle-tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.mtag{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s;user-select:none;position:relative}
+.mtag.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.mtag-del{display:none;position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--danger);color:#fff;font-size:9px;line-height:14px;text-align:center;cursor:pointer}
+.mtag:hover .mtag-del{display:block}
+.mtag-add{padding:5px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:0.5px dashed var(--border);background:transparent;color:var(--accent);transition:all .15s;display:flex;align-items:center;gap:3px;white-space:nowrap}
+.mtag-add:hover{border-color:var(--accent)}
+
+/* EXERCISE ITEMS */
+.ex-item{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px;transition:border-color .15s}
+.ex-item:hover{border-color:var(--accent)}
+.ex-item-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.ex-item-name{font-size:14px;font-weight:600}
+.ex-item-go{font-size:12px;color:var(--accent2)}
+.ex-item-prev{font-size:12px;color:var(--muted)}
+.ex-item-note{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
+
+/* PANEL */
+.panel-overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:50;display:flex;flex-direction:column;justify-content:flex-end}
+.panel{background:var(--surface);border-radius:20px 20px 0 0;padding:16px 16px 32px;max-height:88vh;overflow-y:auto}
+.panel::-webkit-scrollbar{display:none}
+.panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.panel-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.set-input-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.set-inp{flex:1;background:var(--card);border:0.5px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:15px;outline:none;transition:border-color .15s}
+.set-inp:focus{border-color:var(--accent)}
+.set-inp::placeholder{color:var(--muted);font-size:13px}
+.set-del{color:var(--muted);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0}
+.add-set-btn{width:100%;padding:9px;border-radius:10px;border:0.5px dashed var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:8px;transition:border-color .15s}
+.add-set-btn:hover{border-color:var(--accent);color:var(--accent)}
+.save-btn{width:100%;padding:12px;border-radius:12px;background:var(--accent);border:none;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.save-btn:active{opacity:.85}
+.note-area{width:100%;background:var(--card);border:0.5px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;resize:none;font-family:inherit;transition:border-color .15s;line-height:1.5}
+.note-area:focus{border-color:var(--accent)}
+.note-area::placeholder{color:var(--muted)}
+.note-saved-badge{font-size:10px;color:var(--success);opacity:0;transition:opacity .3s}
+.note-saved-badge.show{opacity:1}
+
+/* HISTORY IN PANEL */
+.hist-section{margin-top:14px;border-top:0.5px solid var(--border);padding-top:12px}
+.hist-title{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.hist-entry{margin-bottom:6px}
+.hist-date-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.hist-date{font-size:12px;font-weight:600;color:var(--text)}
+.hist-pr-badge{font-size:9px;font-weight:700;background:var(--accent);color:#fff;padding:2px 6px;border-radius:8px;letter-spacing:.5px}
+.hist-set{display:flex;gap:6px;align-items:center;font-size:12px;padding:2px 0}
+.hist-set-num{color:var(--muted);min-width:20px;font-size:11px}
+.hist-set-val{color:var(--text)}
+.hist-set-best{color:var(--accent);font-weight:600}
+.hist-divider{height:0.5px;background:var(--border);margin:8px 0}
+.hist-month-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--card);border:0.5px solid var(--border);border-radius:10px;cursor:pointer;margin-bottom:6px;transition:border-color .15s;user-select:none}
+.hist-month-toggle:hover{border-color:var(--accent)}
+.hist-month-label{font-size:12px;font-weight:600;color:var(--text)}
+.hist-month-meta{font-size:11px;color:var(--muted)}
+.hist-month-arrow{font-size:11px;color:var(--muted);transition:transform .2s}
+.hist-month-arrow.open{transform:rotate(90deg)}
+.hist-month-body{display:none;padding:0 2px 4px}
+.hist-month-body.open{display:block}
+.hist-show-more{width:100%;padding:7px;border-radius:9px;border:0.5px dashed var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;margin-top:4px;transition:border-color .15s}
+.hist-show-more:hover{border-color:var(--accent);color:var(--accent)}
+
+/* CAMERA */
+.cam-overlay{position:absolute;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column}
+.cam-header{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cam-title{font-size:15px;font-weight:600;flex:1}
+.cam-close{width:32px;height:32px;border-radius:50%;background:var(--card);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--muted)}
+.cam-view{flex:1;position:relative;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#cam-video{width:100%;height:100%;object-fit:cover}
+.cam-label-overlay{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:13px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);padding:5px 0}
+.cam-preview{width:100%;height:100%;object-fit:cover;display:none}
+.cam-controls{flex-shrink:0;background:var(--bg);padding:16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
+.cam-switch{width:44px;height:44px;border-radius:50%;background:var(--card);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px}
+.cam-shoot{width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s}
+.cam-shoot:active{transform:scale(.92)}
+.cam-shoot-inner{width:48px;height:48px;border-radius:50%;background:var(--accent)}
+.cam-retake{width:44px;height:44px;border-radius:50%;background:var(--card);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted)}
+.cam-type-tabs{display:flex;background:var(--card);border-radius:10px;padding:3px;margin:10px 14px 0;flex-shrink:0}
+.cam-type-tab{flex:1;padding:7px;text-align:center;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--muted)}
+.cam-type-tab.active{background:var(--accent);color:#fff}
+.day-view-overlay{position:absolute;inset:0;background:var(--bg);z-index:90;display:flex;flex-direction:column}
+.day-view-header{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.day-view-title{font-size:15px;font-weight:600;flex:1}
+.dv-photo-card{border-radius:12px;overflow:hidden;border:0.5px solid var(--border)}
+.dv-photo-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;cursor:pointer}
+.dv-photo-lbl{background:var(--card);padding:7px 10px;font-size:12px;color:var(--muted);text-align:center}
+.dv-photo-empty{width:100%;aspect-ratio:3/4;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.dv-photo-empty svg{width:32px;height:32px;stroke:var(--border)}
+.dv-photo-empty span{font-size:12px;color:var(--muted)}
+.stats-row{display:flex;gap:8px;margin-bottom:10px}
+.stat-box{flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.stat-val{font-size:20px;font-weight:700}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.fab{position:fixed;bottom:82px;right:50%;transform:translateX(calc(50% - 197px));width:50px;height:50px;border-radius:50%;background:var(--accent);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 18px rgba(255,107,43,.45);z-index:40;transition:transform .15s}
+.fab:active{transform:translateX(calc(50% - 197px)) scale(.93)}
+.fab svg{width:22px;height:22px;stroke:#fff;stroke-width:2.5;fill:none}
+.bnav{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 0 18px;z-index:30}
+.bi{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;padding:4px 0;transition:color .15s}
+.bi svg{width:20px;height:20px;stroke-width:2;fill:none;stroke:currentColor}
+.bi.active{color:var(--accent)}
+.toast{position:absolute;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--success);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">IRON<span>LOG</span></div>
+    <div class="streak">🔥 <span id="streak-count">0</span>日連続</div>
+  </div>
+  <div class="nav">
+    <div class="nav-tab active" data-tab="home" onclick="switchTab('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム
+    </div>
+    <div class="nav-tab" data-tab="record" onclick="switchTab('record')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>記録
+    </div>
+    <div class="nav-tab" data-tab="best" onclick="switchTab('best')">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>ベスト
+    </div>
+    <div class="nav-tab" data-tab="photos" onclick="switchTab('photos')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>写真
+    </div>
+  </div>
+
+  <!-- HOME TAB -->
+  <div class="scroll-area" id="tab-home">
+    <div class="slabel">今週のトレーニング</div>
+    <div class="week-row" id="week-row"></div>
+    <div class="slabel">月間ボリューム（万kg）</div>
+    <div class="card" style="padding:12px">
+      <div class="bars" id="vol-bars"></div>
+      <div style="font-size:11px;color:var(--muted)">今月：<span style="color:var(--accent2);font-weight:600" id="vol-total">—</span></div>
+    </div>
+    <div class="slabel">インターバルタイマー</div>
+    <div class="card">
+      <div class="timer-presets">
+        <div class="tpbtn" onclick="setTimer(60,this)">1分</div>
+        <div class="tpbtn sel" onclick="setTimer(90,this)">1:30</div>
+        <div class="tpbtn" onclick="setTimer(120,this)">2分</div>
+        <div class="tpbtn" onclick="setTimer(180,this)">3分</div>
+      </div>
+      <div class="timer-face">
+        <div class="timer-num" id="timer-display">1:30</div>
+        <div class="timer-lbl">インターバルタイマー</div>
+      </div>
+      <div class="timer-btns">
+        <button class="tbtn" onclick="resetTimer()">リセット</button>
+        <button class="tbtn primary" id="timer-btn" onclick="toggleTimer()">スタート</button>
+      </div>
+    </div>
+    <div class="slabel">最近の記録</div>
+    <div id="recent-logs"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">まだ記録がありません</div></div>
+  </div>
+
+  <!-- RECORD TAB -->
+  <div class="scroll-area hidden" id="tab-record">
+    <div class="slabel">部位</div>
+    <div class="muscle-tag-row" id="muscle-tag-row"></div>
+    <div class="slabel">種目</div>
+    <div id="ex-list"></div>
+  </div>
+
+  <!-- BEST TAB -->
+  <div class="scroll-area hidden" id="tab-best">
+    <div class="slabel">パーソナルベスト</div>
+    <div class="pr-grid" id="pr-grid"></div>
+    <div class="slabel">推定1RM</div>
+    <div class="card" style="padding:12px" id="orm-card">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:10px">記録を追加すると1RMが計算されます</div>
+    </div>
+  </div>
+
+  <!-- PHOTOS TAB -->
+  <div class="scroll-area hidden" id="tab-photos">
+    <div class="slabel">ビフォーアフター</div>
+    <div class="card" style="padding:12px">
+      <div class="ba-wrap">
+        <div class="ba-side">
+          <div class="ba-frame" id="ba-first"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+          <div class="ba-meta" id="ba-first-lbl">—</div>
+        </div>
+        <div class="ba-arrow">→</div>
+        <div class="ba-side">
+          <div class="ba-frame highlight" id="ba-last"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+          <div class="ba-meta" id="ba-last-lbl">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="slabel">体重・体脂肪</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="stat-weight">—</div><div class="stat-lbl">体重 kg</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-fat">—</div><div class="stat-lbl">体脂肪 %</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-lbm">—</div><div class="stat-lbl">除脂肪 kg</div></div>
+    </div>
+    <div class="card" style="padding:11px 13px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">今日の体重・体脂肪を記録</div>
+      <div style="display:flex;gap:8px">
+        <input class="set-inp" type="number" step="0.1" placeholder="体重 (kg)" id="inp-weight" style="flex:1">
+        <input class="set-inp" type="number" step="0.1" placeholder="体脂肪 (%)" id="inp-fat" style="flex:1">
+        <button class="tbtn primary" onclick="saveBodyStats()" style="padding:9px 14px;font-size:13px">記録</button>
+      </div>
+    </div>
+    <div class="slabel">月ごとの写真</div>
+    <div class="month-grid" id="month-grid"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="save-btn" style="flex:1;font-size:13px;padding:10px" onclick="openCamera('front')">今日の写真（前面）</button>
+      <button class="tbtn" style="flex:1;font-size:13px;padding:10px" onclick="openCamera('back')">今日の写真（背面）</button>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab hidden" id="fab" onclick="switchTab('record')" aria-label="記録を追加">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bi active" id="bi-home" onclick="switchTab('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム
+    </div>
+    <div class="bi" id="bi-record" onclick="switchTab('record')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>記録
+    </div>
+    <div class="bi" id="bi-best" onclick="switchTab('best')">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>ベスト
+    </div>
+    <div class="bi" id="bi-photos" onclick="switchTab('photos')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>写真
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <!-- EXERCISE LOG PANEL -->
+  <div class="panel-overlay hidden" id="panel-overlay" onclick="closePanelIfBg(event)">
+    <div class="panel">
+      <div class="panel-handle"></div>
+      <!-- HEADER -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div class="panel-title" id="panel-ex-name" style="margin-bottom:2px"></div>
+          <div style="font-size:11px;color:var(--muted)" id="panel-muscle-badge"></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--muted)">最高重量</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent)" id="panel-pr-val">—</div>
+        </div>
+      </div>
+      <!-- PREV SESSION BANNER -->
+      <div id="panel-prev-banner" style="display:none;background:var(--card);border:0.5px solid var(--border);border-radius:10px;padding:8px 11px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px">前回（<span id="panel-prev-date"></span>）</div>
+          <div style="font-size:12px;color:var(--text)" id="panel-prev-sets"></div>
+        </div>
+        <div style="font-size:11px;color:var(--accent2);cursor:pointer;white-space:nowrap;margin-left:8px" onclick="copyPrevSets()">再入力</div>
+      </div>
+      <!-- SETS -->
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.8px;margin-bottom:7px">セット記録</div>
+      <div id="panel-sets"></div>
+      <button class="add-set-btn" onclick="addSet()">＋ セットを追加</button>
+      <!-- NOTE SECTION -->
+      <div style="margin-bottom:12px;margin-top:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.8px">メモ（自動保存）</div>
+          <span class="note-saved-badge" id="note-saved-badge">保存 ✓</span>
+        </div>
+        <textarea class="note-area" id="panel-note" rows="2" placeholder="フォームのコツ、注意点、次回の目標など…" oninput="autoSaveNote()"></textarea>
+      </div>
+      <button class="save-btn" onclick="saveLog()">記録を保存</button>
+      <!-- HISTORY SECTION -->
+      <div class="hist-section" id="panel-history"></div>
+    </div>
+  </div>
+
+  <!-- ADD EXERCISE PANEL -->
+  <div class="panel-overlay hidden" id="add-ex-overlay" onclick="closeAddExIfBg(event)">
+    <div class="panel" style="padding-bottom:36px">
+      <div class="panel-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="panel-title" style="margin-bottom:0">種目を追加</div>
+        <div onclick="closeAddExercise()" style="font-size:13px;color:var(--muted);cursor:pointer">キャンセル</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.8px">種目名</div>
+        <input class="set-inp" id="add-ex-name" type="text" placeholder="例：ケーブルクロスオーバー" style="width:100%;font-size:15px" onkeydown="if(event.key==='Enter')saveNewExercise()">
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:.8px">部位</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="add-ex-muscles"></div>
+      </div>
+      <button class="save-btn" onclick="saveNewExercise()">追加する</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">カスタム種目は × で削除できます<br>同じ種目名は部位をまたいで記録が共有されます</div>
+    </div>
+  </div>
+
+  <!-- ADD MUSCLE PANEL -->
+  <div class="panel-overlay hidden" id="add-muscle-overlay" onclick="closeAddMuscleIfBg(event)">
+    <div class="panel" style="padding-bottom:36px">
+      <div class="panel-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="panel-title" style="margin-bottom:0">部位を追加</div>
+        <div onclick="closeAddMuscle()" style="font-size:13px;color:var(--muted);cursor:pointer">キャンセル</div>
+      </div>
+      <div style="margin-bottom:6px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.8px">部位名</div>
+        <input class="set-inp" id="add-muscle-name" type="text" placeholder="例：体幹、カーディオ…" style="width:100%;font-size:15px" onkeydown="if(event.key==='Enter')saveNewMuscle()">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">同じ名前の種目は部位をまたいで同じ記録が参照されます</div>
+      </div>
+      <div style="margin-top:16px">
+        <button class="save-btn" onclick="saveNewMuscle()">追加する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMERA -->
+  <div class="cam-overlay hidden" id="cam-overlay">
+    <div class="cam-header">
+      <div class="cam-close" onclick="closeCamera()">✕</div>
+      <div class="cam-title">写真を撮る</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="cam-type-tabs">
+      <div class="cam-type-tab active" id="cam-tab-front" onclick="setCamType('front')">前面</div>
+      <div class="cam-type-tab" id="cam-tab-back" onclick="setCamType('back')">背面</div>
+    </div>
+    <div class="cam-view">
+      <video id="cam-video" autoplay playsinline muted></video>
+      <canvas id="cam-canvas" style="display:none"></canvas>
+      <img id="cam-preview" class="cam-preview" alt="">
+      <div class="cam-label-overlay" id="cam-label-overlay">前面を向いて立ってください</div>
+    </div>
+    <div class="cam-controls">
+      <div class="cam-switch" onclick="flipCamera()" id="cam-flip-btn">🔄</div>
+      <div class="cam-shoot" onclick="shootPhoto()" id="cam-shoot-btn"><div class="cam-shoot-inner"></div></div>
+      <div class="cam-retake" onclick="retakePhoto()" id="cam-retake-btn" style="display:none">↩</div>
+      <div style="width:44px" id="cam-right-placeholder"></div>
+    </div>
+    <div style="padding:0 14px 10px">
+      <button class="save-btn" id="cam-save-btn" style="display:none" onclick="savePhoto()">この写真を保存</button>
+    </div>
+  </div>
+
+  <!-- DAY VIEW -->
+  <div class="day-view-overlay hidden" id="day-view-overlay">
+    <div class="day-view-header">
+      <div class="cam-close" onclick="closeDayView()">✕</div>
+      <div class="day-view-title" id="day-view-title">写真</div>
+      <div style="width:32px"></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 100px">
+      <div id="dv-photos"></div>
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 20px;background:linear-gradient(transparent,var(--bg) 35%);display:flex;gap:8px;padding-top:30px">
+      <button class="save-btn" style="flex:1;font-size:13px;padding:10px" onclick="openCamera('front')">前面を撮る</button>
+      <button class="tbtn" style="flex:1;font-size:13px;padding:10px" onclick="openCamera('back')">背面を撮る</button>
+    </div>
+  </div>
+
+  <!-- PHOTO FULLSCREEN -->
+  <div style="position:absolute;inset:0;background:#000;z-index:150;flex-direction:column;display:none" id="photo-full-overlay">
+    <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+      <div class="cam-close" onclick="closePhotoFull()">✕</div>
+      <div style="font-size:14px;font-weight:600;flex:1;color:var(--text)" id="photo-full-title"></div>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden">
+      <img id="photo-full-img" style="max-width:100%;max-height:100%;object-fit:contain" alt="">
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DB =====================
+const DB_NAME = 'ironlog_db', DB_VER = 4;
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      ['logs','photos','body','exercises','muscles','notes'].forEach(s => {
+        if (!d.objectStoreNames.contains(s))
+          d.createObjectStore(s, {keyPath:'id', autoIncrement:true});
+      });
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = e => rej(e);
+  });
+}
+function dbAdd(store, data) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).add(data);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e);
+  });
+}
+function dbPut(store, data) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(data);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e);
+  });
+}
+function dbDelete(store, id) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(id);
+    req.onsuccess = () => res();
+    req.onerror = e => rej(e);
+  });
+}
+function dbGetAll(store) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e);
+  });
+}
+
+// ===================== STATE =====================
+const DEFAULT_MUSCLES = ['胸','背中','脚','肩','腕','腹筋','その他'];
+const DEFAULT_EXERCISES = [
+  {name:'ベンチプレス',muscle:'胸'},{name:'インクラインプレス',muscle:'胸'},{name:'ダンベルフライ',muscle:'胸'},
+  {name:'スクワット',muscle:'脚'},{name:'レッグプレス',muscle:'脚'},{name:'ルーマニアンデッドリフト',muscle:'脚'},
+  {name:'デッドリフト',muscle:'背中'},{name:'チンニング',muscle:'背中'},{name:'ベントオーバーロウ',muscle:'背中'},
+  {name:'ショルダープレス',muscle:'肩'},{name:'サイドレイズ',muscle:'肩'},
+  {name:'バーベルカール',muscle:'腕'},{name:'トライセプスプレスダウン',muscle:'腕'},
+  {name:'クランチ',muscle:'腹筋'},{name:'プランク',muscle:'腹筋'},
+];
+
+let currentTab = 'home';
+let currentMuscle = '全て';
+let currentExercise = null;
+let panelSets = [{w:'',r:''}];
+let noteTimer = null;
+let timerSec = 90, timerMax = 90, timerRunning = false, timerInterval = null;
+let camStream = null, camFacing = 'user', capturedDataURL = null, camType = 'front';
+let allLogs = [], allPhotos = [], allBody = [], allCustomExercises = [], allCustomMuscles = [], allNotes = [];
+
+function getAllMuscles() { return [...DEFAULT_MUSCLES, ...allCustomMuscles.map(m=>m.name)]; }
+function getAllExercises() { return [...DEFAULT_EXERCISES, ...allCustomExercises]; }
+// Get note for an exercise (by name, case-insensitive trim)
+function getNoteFor(name) {
+  const n = allNotes.find(n => n.exercise === name);
+  return n ? n.text : '';
+}
+
+// ===================== INIT =====================
+async function init() {
+  await openDB();
+  [allLogs, allPhotos, allBody, allCustomExercises, allCustomMuscles, allNotes] =
+    await Promise.all(['logs','photos','body','exercises','muscles','notes'].map(dbGetAll));
+  renderAll();
+}
+
+function renderAll() {
+  renderWeek(); renderVolBars(); renderRecentLogs();
+  renderMuscleTags(); renderExList();
+  renderPR(); renderPhotosTab(); updateStreak();
+}
+
+// ===================== TABS =====================
+function switchTab(tab) {
+  ['home','record','best','photos'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+    document.querySelector('[data-tab='+t+']').classList.toggle('active', t === tab);
+    document.getElementById('bi-'+t).classList.toggle('active', t === tab);
+  });
+  currentTab = tab;
+  document.getElementById('fab').classList.toggle('hidden', tab !== 'home' && tab !== 'best' && tab !== 'photos');
+}
+
+// ===================== HOME =====================
+function renderWeek() {
+  const days = ['月','火','水','木','金','土','日'];
+  const now = new Date(), dow = (now.getDay()+6)%7;
+  document.getElementById('week-row').innerHTML = days.map((d,i) => {
+    const dt = new Date(now); dt.setDate(now.getDate()+(i-dow));
+    const ds = dateStr(dt), done = allLogs.some(l=>l.date===ds), isToday = i===dow;
+    return `<div class="wday"><div class="wday-lbl">${d}</div><div class="wday-dot${done?' done':''}${isToday&&!done?' today':''}">${done?'✓':''}</div></div>`;
+  }).join('');
+}
+
+function renderVolBars() {
+  const now = new Date();
+  const weeks = [0,1,2,3].map(w => {
+    const s = new Date(now); s.setDate(now.getDate()-now.getDay()-w*7+1);
+    const e = new Date(s); e.setDate(s.getDate()+6);
+    return allLogs.reduce((vol,l) => {
+      const d = new Date(l.date);
+      if(d>=s && d<=e) l.sets.forEach(s2=>{if(s2.w&&s2.r) vol+=parseFloat(s2.w)*parseInt(s2.r);});
+      return vol;
+    },0);
+  }).reverse();
+  const maxV = Math.max(...weeks,1);
+  document.getElementById('vol-bars').innerHTML = weeks.map((v,i) =>
+    `<div class="bar-w"><div class="bar${i===3?' hi':''}" style="height:${Math.round(v/maxV*68)+4}px"></div><div class="bar-lbl">${i+1}週</div></div>`
+  ).join('');
+  const total = allLogs.filter(l=>{ const d=new Date(l.date); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); })
+    .reduce((a,l)=>a+l.sets.reduce((b,s)=>b+(s.w&&s.r?parseFloat(s.w)*parseInt(s.r):0),0),0);
+  document.getElementById('vol-total').textContent = total>=10000?(total/10000).toFixed(1)+'万kg':total+'kg';
+}
+
+function renderRecentLogs() {
+  const el = document.getElementById('recent-logs');
+  const recent = [...allLogs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  if(!recent.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">まだ記録がありません</div>';return;}
+  el.innerHTML = recent.map(l => {
+    const best = l.sets.reduce((b,s)=>s.w&&parseFloat(s.w)>parseFloat(b.w||0)?s:b,{});
+    return `<div class="log-entry">
+      <div class="log-hdr"><div class="log-name">${l.exercise}</div><div class="log-date">${l.date}</div></div>
+      ${l.sets.map((s,i)=>{
+        const ib=s.w===best.w&&s.r===best.r;
+        return `<div class="set-row"><span class="sn">S${i+1}</span><span class="${ib?'sb':'sv'}">${s.w||'—'}kg</span><span class="sp"> × </span><span class="${ib?'sb':'sv'}">${s.r||'—'}回${ib?' ★':''}</span></div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function updateStreak() {
+  const dates = [...new Set(allLogs.map(l=>l.date))].sort((a,b)=>b.localeCompare(a));
+  let streak=0, cur=dateStr(new Date());
+  for(const d of dates){
+    if(d===cur){streak++;const dt=new Date(cur);dt.setDate(dt.getDate()-1);cur=dateStr(dt);}else break;
+  }
+  document.getElementById('streak-count').textContent=streak;
+}
+
+// ===================== MUSCLE TAGS =====================
+function renderMuscleTags() {
+  const muscles = getAllMuscles();
+  const row = document.getElementById('muscle-tag-row');
+  const tags = [
+    `<div class="mtag${currentMuscle==='全て'?' sel':''}" onclick="filterMuscle(this,'全て')">全て</div>`,
+    ...muscles.map(m => {
+      const isCustom = allCustomMuscles.some(cm => cm.name === m);
+      const sel = currentMuscle === m ? ' sel' : '';
+      // Use data attribute + JS event to avoid inline quote escaping issues
+      return `<div class="mtag mtag-item${sel}" data-muscle="${m.replace(/"/g,'&quot;')}">${m}${isCustom ? `<span class="mtag-del">×</span>` : ''}</div>`;
+    }),
+    `<div class="mtag-add" onclick="openAddMuscle()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>部位を追加
+    </div>`
+  ];
+  row.innerHTML = tags.join('');
+  // attach events after render
+  row.querySelectorAll('.mtag-item').forEach(tag => {
+    const muscle = tag.dataset.muscle;
+    tag.addEventListener('click', e => {
+      if(e.target.classList.contains('mtag-del')) return;
+      filterMuscle(tag, muscle);
+    });
+    const del = tag.querySelector('.mtag-del');
+    if(del) del.addEventListener('click', e => { e.stopPropagation(); deleteMuscle(muscle); });
+  });
+}
+
+function filterMuscle(el, muscle) {
+  currentMuscle = muscle;
+  renderMuscleTags();
+  renderExList();
+}
+
+async function deleteMuscle(name) {
+  const cm = allCustomMuscles.find(m => m.name === name);
+  if(!cm) return;
+  if(!confirm(`「${name}」を削除しますか？\nこの部位に登録されている種目はその他に移動します。`)) return;
+  await dbDelete('muscles', cm.id);
+  allCustomMuscles = allCustomMuscles.filter(m => m.name !== name);
+  // move exercises from this muscle to その他
+  for(const ex of allCustomExercises.filter(ex => ex.muscle === name)) {
+    ex.muscle = 'その他';
+    await dbPut('exercises', ex);
+  }
+  if(currentMuscle === name) currentMuscle = '全て';
+  renderMuscleTags();
+  renderExList();
+  showToast(`「${name}」を削除しました`);
+}
+
+function openAddMuscle() {
+  document.getElementById('add-muscle-overlay').classList.remove('hidden');
+  document.getElementById('add-muscle-name').value='';
+  setTimeout(()=>document.getElementById('add-muscle-name').focus(),100);
+}
+function closeAddMuscle() { document.getElementById('add-muscle-overlay').classList.add('hidden'); }
+function closeAddMuscleIfBg(e){ if(e.target===document.getElementById('add-muscle-overlay')) closeAddMuscle(); }
+
+async function saveNewMuscle() {
+  const name = document.getElementById('add-muscle-name').value.trim();
+  if(!name){showToast('部位名を入力してください');return;}
+  if(getAllMuscles().includes(name)){showToast('同じ名前の部位があります');return;}
+  const rec = {name, ts:Date.now()};
+  const id = await dbAdd('muscles', rec);
+  allCustomMuscles.push({...rec, id});
+  closeAddMuscle();
+  currentMuscle = name;
+  renderMuscleTags();
+  renderExList();
+  showToast(`「${name}」を追加しました ✓`);
+}
+
+// ===================== EXERCISE LIST =====================
+function renderExList() {
+  const all = getAllExercises();
+  const filtered = currentMuscle==='全て' ? all : all.filter(e=>e.muscle===currentMuscle);
+  const el = document.getElementById('ex-list');
+  const items = filtered.map(e => {
+    const last = [...allLogs].filter(l=>l.exercise===e.name).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const prevText = last ? last.sets.slice(0,3).map(s=>`${s.w}×${s.r}`).join(' / ') : '記録なし';
+    const note = getNoteFor(e.name);
+    const isCustom = !!e.id;
+    return `<div class="ex-item" style="position:relative">
+      <div style="cursor:pointer" onclick="openPanel('${esc(e.name)}')">
+        <div class="ex-item-hdr">
+          <div class="ex-item-name">${e.name}</div>
+          <div class="ex-item-go" style="padding-right:${isCustom?'28px':'0'}">→ 記録</div>
+        </div>
+        <div class="ex-item-prev">前回：${prevText}</div>
+        ${note?`<div class="ex-item-note">📝 ${note}</div>`:''}
+      </div>
+      ${isCustom?`<div onclick="deleteExercise(${e.id},'${esc(e.name)}',event)"
+        style="position:absolute;top:50%;right:12px;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--surface);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);cursor:pointer">×</div>`:''}
+    </div>`;
+  });
+  items.push(`<div class="ex-item" style="border-style:dashed;cursor:pointer;text-align:center" onclick="openAddExercise()">
+    <div style="color:var(--accent);font-size:13px;font-weight:600">＋ 種目を追加</div>
+  </div>`);
+  el.innerHTML = items.join('');
+}
+
+async function deleteExercise(id, name, e) {
+  e.stopPropagation();
+  if(!confirm(`「${name}」を削除しますか？`)) return;
+  await dbDelete('exercises', id);
+  allCustomExercises = allCustomExercises.filter(ex=>ex.id!==id);
+  renderExList();
+  showToast('種目を削除しました');
+}
+
+function openAddExercise() {
+  document.getElementById('add-ex-overlay').classList.remove('hidden');
+  document.getElementById('add-ex-name').value='';
+  renderAddExMuscleTags();
+  setTimeout(()=>document.getElementById('add-ex-name').focus(),100);
+}
+function closeAddExercise() { document.getElementById('add-ex-overlay').classList.add('hidden'); }
+function closeAddExIfBg(e){ if(e.target===document.getElementById('add-ex-overlay')) closeAddExercise(); }
+
+function renderAddExMuscleTags() {
+  const muscles = getAllMuscles();
+  document.getElementById('add-ex-muscles').innerHTML = muscles.map((m,i)=>
+    `<div class="mtag add-ex-muscle${i===0?' sel':''}" data-muscle="${m}" onclick="selAddExMuscle(this)">${m}</div>`
+  ).join('');
+}
+function selAddExMuscle(el){
+  document.querySelectorAll('.add-ex-muscle').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function saveNewExercise() {
+  const name = document.getElementById('add-ex-name').value.trim();
+  if(!name){showToast('種目名を入力してください');return;}
+  const muscle = document.querySelector('.add-ex-muscle.sel')?.dataset.muscle||'その他';
+  if(getAllExercises().some(e=>e.name===name)){showToast('同じ名前の種目があります');return;}
+  const rec = {name, muscle, ts:Date.now()};
+  const id = await dbAdd('exercises', rec);
+  allCustomExercises.push({...rec, id});
+  closeAddExercise();
+  currentMuscle = muscle;
+  renderMuscleTags();
+  renderExList();
+  showToast(`「${name}」を追加しました ✓`);
+}
+
+// ===================== LOG PANEL =====================
+let lastSessionSets = []; // stored for "re-copy" button
+
+function openPanel(name) {
+  currentExercise = name;
+  document.getElementById('panel-ex-name').textContent = name;
+
+  // muscle badge
+  const ex = getAllExercises().find(e => e.name === name);
+  document.getElementById('panel-muscle-badge').textContent = ex ? ex.muscle : '';
+
+  // PR display
+  let prVal = '—';
+  allLogs.forEach(l => {
+    if(l.exercise !== name) return;
+    l.sets.forEach(s => {
+      if(s.w && (!prVal || parseFloat(s.w) > parseFloat(prVal))) prVal = s.w;
+    });
+  });
+  document.getElementById('panel-pr-val').textContent = prVal === '—' ? '—' : prVal + 'kg';
+
+  // prev session
+  const last = [...allLogs].filter(l => l.exercise === name).sort((a,b) => b.date.localeCompare(a.date))[0];
+  const banner = document.getElementById('panel-prev-banner');
+  if(last && last.sets.length) {
+    lastSessionSets = last.sets.map(s => ({w: s.w, r: s.r}));
+    document.getElementById('panel-prev-date').textContent = last.date;
+    document.getElementById('panel-prev-sets').textContent =
+      last.sets.map((s, i) => `S${i+1}: ${s.w||'—'}kg×${s.r||'—'}回`).join('　');
+    banner.style.display = 'flex';
+    // pre-fill with last session values
+    panelSets = last.sets.map(s => ({w: s.w, r: s.r}));
+  } else {
+    lastSessionSets = [];
+    banner.style.display = 'none';
+    panelSets = [{w: '', r: ''}];
+  }
+
+  // note
+  document.getElementById('panel-note').value = getNoteFor(name);
+
+  renderPanelSets();
+  renderPanelHistory(name);
+  document.getElementById('panel-overlay').classList.remove('hidden');
+  // scroll panel to top
+  document.querySelector('#panel-overlay .panel').scrollTop = 0;
+}
+
+function copyPrevSets() {
+  panelSets = lastSessionSets.map(s => ({w: s.w, r: s.r}));
+  renderPanelSets();
+  showToast('前回の値を入力しました');
+}
+
+function closePanelIfBg(e){ if(e.target === document.getElementById('panel-overlay')) closePanel(); }
+function closePanel(){ document.getElementById('panel-overlay').classList.add('hidden'); }
+
+function renderPanelSets() {
+  document.getElementById('panel-sets').innerHTML = panelSets.map((s, i) => {
+    const prev = lastSessionSets[i];
+    const wChanged = prev && s.w && s.w !== prev.w;
+    const rChanged = prev && s.r && s.r !== prev.r;
+    return `
+    <div class="set-input-row">
+      <span style="color:var(--muted);font-size:12px;min-width:22px">S${i+1}</span>
+      <input class="set-inp" type="number" step="0.5" placeholder="重量(kg)" value="${s.w}"
+        style="${wChanged ? 'border-color:var(--accent2)' : ''}"
+        oninput="panelSets[${i}].w=this.value;updateSetHighlight(this,${i},'w')">
+      <span style="color:var(--muted);font-size:13px">×</span>
+      <input class="set-inp" type="number" style="max-width:80px;${rChanged ? 'border-color:var(--accent2)' : ''}" placeholder="回数" value="${s.r}"
+        oninput="panelSets[${i}].r=this.value;updateSetHighlight(this,${i},'r')">
+      ${panelSets.length > 1
+        ? `<span class="set-del" onclick="removeSet(${i})">×</span>`
+        : '<span style="width:24px"></span>'}
+    </div>`;
+  }).join('');
+}
+
+function updateSetHighlight(el, i, key) {
+  const prev = lastSessionSets[i];
+  if(prev) {
+    el.style.borderColor = (el.value && el.value !== prev[key]) ? 'var(--accent2)' : '';
+  }
+}
+
+function addSet(){ panelSets.push({w:panelSets[panelSets.length-1].w, r:''}); renderPanelSets(); }
+function removeSet(i){ panelSets.splice(i,1); renderPanelSets(); }
+
+async function saveLog() {
+  const filled = panelSets.filter(s=>s.w||s.r);
+  if(!filled.length){showToast('セットを入力してください');return;}
+  const log = {exercise:currentExercise, date:dateStr(new Date()), sets:filled, ts:Date.now()};
+  await dbAdd('logs', log);
+  allLogs.push(log);
+  closePanel();
+  renderAll();
+  showToast('記録しました ✓');
+}
+
+// ===================== PANEL HISTORY =====================
+function renderPanelHistory(name) {
+  const el = document.getElementById('panel-history');
+  // all logs for this exercise, newest first
+  const logs = [...allLogs]
+    .filter(l => l.exercise === name)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
+
+  if(!logs.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  // global PR weight for this exercise
+  let globalPR = 0;
+  logs.forEach(l => l.sets.forEach(s => { if(s.w && parseFloat(s.w) > globalPR) globalPR = parseFloat(s.w); }));
+
+  // helper: render one log entry
+  function renderEntry(l) {
+    const [, dm, dd] = l.date.split('-');
+    const dayLabel = `${parseInt(dm)}月${parseInt(dd)}日`;
+    const maxW = l.sets.reduce((m, s) => s.w && parseFloat(s.w) > m ? parseFloat(s.w) : m, 0);
+    const isPR = maxW === globalPR;
+    const setsHtml = l.sets.map((s, i) => {
+      const isBest = s.w && parseFloat(s.w) === maxW;
+      return `<div class="hist-set">
+        <span class="hist-set-num">S${i+1}</span>
+        <span class="${isBest ? 'hist-set-best' : 'hist-set-val'}">${s.w||'—'}kg × ${s.r||'—'}回${isBest && isPR ? ' 🏆' : ''}</span>
+      </div>`;
+    }).join('');
+    return `<div class="hist-entry">
+      <div class="hist-date-row">
+        <div class="hist-date">${dayLabel}</div>
+        ${isPR ? `<div class="hist-pr-badge">PR</div>` : `<div style="font-size:11px;color:var(--muted)">最高 ${maxW}kg</div>`}
+      </div>
+      ${setsHtml}
+    </div>`;
+  }
+
+  // split: recent 5 vs older
+  const RECENT_N = 5;
+  const recent = logs.slice(0, RECENT_N);
+  const older  = logs.slice(RECENT_N);
+
+  // group older by YYYY-MM
+  const monthMap = {};
+  older.forEach(l => {
+    const key = l.date.substring(0, 7);
+    if(!monthMap[key]) monthMap[key] = [];
+    monthMap[key].push(l);
+  });
+  const monthKeys = Object.keys(monthMap).sort((a, b) => b.localeCompare(a));
+
+  let html = `<div class="hist-title">過去の記録（${logs.length}件）</div>`;
+
+  // recent entries
+  html += recent.map((l, i) => (i > 0 ? '<div class="hist-divider"></div>' : '') + renderEntry(l)).join('');
+
+  // monthly accordions
+  if(monthKeys.length) {
+    html += `<div style="margin-top:10px"></div>`;
+    html += monthKeys.map(ym => {
+      const [y, m] = ym.split('-');
+      const label = `${y}年${parseInt(m)}月`;
+      const count = monthMap[ym].length;
+      const maxW = monthMap[ym].reduce((mx, l) =>
+        l.sets.reduce((m2, s) => s.w && parseFloat(s.w) > m2 ? parseFloat(s.w) : m2, mx), 0);
+      const bodyId = `hist-body-${ym}`;
+      const arrowId = `hist-arrow-${ym}`;
+      const inner = monthMap[ym]
+        .map((l, i) => (i > 0 ? '<div class="hist-divider"></div>' : '') + renderEntry(l))
+        .join('');
+      return `
+        <div class="hist-month-toggle" onclick="toggleHistMonth('${bodyId}','${arrowId}')">
+          <div>
+            <div class="hist-month-label">${label}</div>
+            <div class="hist-month-meta">${count}回　最高 ${maxW}kg</div>
+          </div>
+          <div class="hist-month-arrow" id="${arrowId}">▶</div>
+        </div>
+        <div class="hist-month-body" id="${bodyId}">${inner}</div>`;
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function toggleHistMonth(bodyId, arrowId) {
+  document.getElementById(bodyId).classList.toggle('open');
+  document.getElementById(arrowId).classList.toggle('open');
+}
+
+// ===================== NOTES =====================
+let noteSaveTimer = null;
+async function autoSaveNote() {
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(async () => {
+    const text = document.getElementById('panel-note').value;
+    const existing = allNotes.find(n=>n.exercise===currentExercise);
+    if(existing) {
+      existing.text = text;
+      await dbPut('notes', existing);
+    } else {
+      const rec = {exercise:currentExercise, text, ts:Date.now()};
+      const id = await dbAdd('notes', rec);
+      allNotes.push({...rec, id});
+    }
+    const badge = document.getElementById('note-saved-badge');
+    badge.classList.add('show');
+    setTimeout(()=>badge.classList.remove('show'), 1500);
+    renderExList(); // refresh note preview
+  }, 800);
+}
+
+// ===================== BEST TAB =====================
+function renderPR() {
+  const prMap={};
+  allLogs.forEach(l=>l.sets.forEach(s=>{
+    if(!s.w||!s.r) return;
+    const w=parseFloat(s.w), r=parseInt(s.r);
+    if(!prMap[l.exercise]||w>prMap[l.exercise].w||(w===prMap[l.exercise].w&&r>prMap[l.exercise].r))
+      prMap[l.exercise]={w,r};
+  }));
+  const keys=Object.keys(prMap);
+  const el=document.getElementById('pr-grid');
+  if(!keys.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;grid-column:span 2;text-align:center;padding:20px">記録を追加するとPRが表示されます</div>';return;}
+  const maxW=Math.max(...keys.map(k=>prMap[k].w));
+  el.innerHTML=keys.map((k,i)=>{
+    const p=prMap[k], pct=Math.round(p.w/maxW*95);
+    return `<div class="pr-card${i<2?' is-pr':''}">
+      <div class="pr-ex">${k}</div>
+      <div><span class="pr-w">${p.w}</span><span class="pr-u">kg</span></div>
+      <div class="pr-r">最高 <span>${p.r}回</span></div>
+      <div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  const counts={};
+  allLogs.forEach(l=>counts[l.exercise]=(counts[l.exercise]||0)+1);
+  const topEx=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+  if(topEx&&prMap[topEx]){
+    const {w,r}=prMap[topEx], orm=Math.round(w*(1+r/30));
+    document.getElementById('orm-card').innerHTML=`
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${topEx}</div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+        <span style="font-size:36px;font-weight:700;color:var(--accent)">${orm}</span>
+        <span style="color:var(--muted)">kg</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">推定1RM</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">計算式: ${w}kg × (1 + ${r}÷30)</div>`;
+  }
+}
+
+// ===================== PHOTOS =====================
+function renderPhotosTab(){ renderBASection(); renderMonthGrid(); renderBodyStats(); }
+
+function renderBASection() {
+  const photos=[...allPhotos].sort((a,b)=>a.date.localeCompare(b.date));
+  const first=photos[0], last=photos[photos.length-1];
+  if(first){ document.getElementById('ba-first').innerHTML=`<img src="${first.dataURL}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`; document.getElementById('ba-first-lbl').textContent=first.date; }
+  if(last&&last!==first){ document.getElementById('ba-last').innerHTML=`<img src="${last.dataURL}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`; document.getElementById('ba-last-lbl').textContent=last.date; }
+}
+
+function renderMonthGrid() {
+  const el=document.getElementById('month-grid'), months={};
+  allPhotos.forEach(p=>{
+    const m=p.date.substring(0,7);
+    if(!months[m]) months[m]={days:new Set(),frontThumb:null,backThumb:null};
+    months[m].days.add(p.date);
+    if(p.type==='front'&&!months[m].frontThumb) months[m].frontThumb=p.dataURL;
+    if(p.type==='back'&&!months[m].backThumb) months[m].backThumb=p.dataURL;
+  });
+  const keys=Object.keys(months).sort((a,b)=>b.localeCompare(a));
+  const html=keys.map(m=>{
+    const info=months[m], thumb=info.frontThumb||info.backThumb;
+    const [y,mo]=m.split('-');
+    return `<div class="month-cell" onclick="openDayView('${m}')">
+      <img class="month-cell-thumb" src="${thumb}" alt="">
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);padding:5px 4px;border-radius:0 0 12px 12px;text-align:center">
+        <div class="month-cell-lbl">${y}年${parseInt(mo)}月</div>
+        <div class="month-cell-count">${info.days.size}日分</div>
+      </div>
+    </div>`;
+  });
+  html.push(`<div class="month-cell" onclick="openCamera('front')">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+    <div class="month-cell-lbl" style="color:var(--accent)">今日撮る</div>
+  </div>`);
+  el.innerHTML=html.join('');
+}
+
+function renderBodyStats() {
+  const s=[...allBody].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(!s) return;
+  document.getElementById('stat-weight').textContent=s.weight||'—';
+  document.getElementById('stat-fat').textContent=s.fat||'—';
+  if(s.weight&&s.fat) document.getElementById('stat-lbm').textContent=(parseFloat(s.weight)*(1-parseFloat(s.fat)/100)).toFixed(1);
+}
+
+async function saveBodyStats() {
+  const w=document.getElementById('inp-weight').value, f=document.getElementById('inp-fat').value;
+  if(!w){showToast('体重を入力してください');return;}
+  const rec={date:dateStr(new Date()),weight:w,fat:f,ts:Date.now()};
+  await dbAdd('body',rec); allBody.push(rec);
+  document.getElementById('inp-weight').value=''; document.getElementById('inp-fat').value='';
+  renderBodyStats(); showToast('体重を記録しました ✓');
+}
+
+// ===================== DAY VIEW =====================
+function openDayView(yearMonth) {
+  const [y,m]=yearMonth.split('-');
+  document.getElementById('day-view-title').textContent=`${y}年${parseInt(m)}月`;
+  const photos=allPhotos.filter(p=>p.date.startsWith(yearMonth));
+  const byDate={};
+  photos.forEach(p=>{ if(!byDate[p.date]) byDate[p.date]={front:null,back:null}; byDate[p.date][p.type]=p.dataURL; });
+  const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+  const dvEl=document.getElementById('dv-photos');
+  if(!dates.length){
+    dvEl.innerHTML=`<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">この月の写真はありません</div>`;
+  } else {
+    dvEl.innerHTML=dates.map(d=>{
+      const [,dm,dd]=d.split('-');
+      const dayLabel=`${parseInt(dm)}月${parseInt(dd)}日`;
+      const fs=byDate[d].front||'', bs=byDate[d].back||'';
+      const isToday=d===dateStr(new Date());
+      const todayBadge=isToday?`<span style="background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px">今日</span>`:'';
+      const status=(fs?'✓前':'')+( bs?' ✓後':'');
+      return `<div style="margin-bottom:22px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:0.5px solid var(--border)">
+          <div style="font-size:13px;font-weight:700">${dayLabel}${todayBadge}</div>
+          ${status?`<div style="font-size:10px;color:var(--success)">${status}</div>`:''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="dv-photo-card">
+            ${fs?`<img class="dv-photo-img dv-tap" data-src="${fs}" data-title="${dayLabel} 前面" src="${fs}" alt="前面">`
+              :`<div class="dv-photo-empty" onclick="openCamera('front')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:28px;height:28px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>前面を追加</span></div>`}
+            <div class="dv-photo-lbl">前面</div>
+          </div>
+          <div class="dv-photo-card">
+            ${bs?`<img class="dv-photo-img dv-tap" data-src="${bs}" data-title="${dayLabel} 背面" src="${bs}" alt="背面">`
+              :`<div class="dv-photo-empty" onclick="openCamera('back')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:28px;height:28px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>背面を追加</span></div>`}
+            <div class="dv-photo-lbl">背面</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    dvEl.querySelectorAll('.dv-tap').forEach(img=>{
+      img.addEventListener('click',()=>openPhotoFull(img.dataset.src, img.dataset.title));
+    });
+  }
+  document.getElementById('day-view-overlay').classList.remove('hidden');
+}
+function closeDayView(){ document.getElementById('day-view-overlay').classList.add('hidden'); }
+function openPhotoFull(src,title){ document.getElementById('photo-full-img').src=src; document.getElementById('photo-full-title').textContent=title; document.getElementById('photo-full-overlay').style.display='flex'; }
+function closePhotoFull(){ document.getElementById('photo-full-overlay').style.display='none'; }
+
+// ===================== CAMERA =====================
+function setCamType(type) {
+  camType=type;
+  document.getElementById('cam-tab-front').classList.toggle('active',type==='front');
+  document.getElementById('cam-tab-back').classList.toggle('active',type==='back');
+  document.getElementById('cam-label-overlay').textContent=type==='front'?'前面を向いて立ってください':'後ろを向いて立ってください';
+}
+async function openCamera(type) {
+  camType=type||'front'; capturedDataURL=null;
+  document.getElementById('cam-overlay').classList.remove('hidden');
+  document.getElementById('cam-preview').style.display='none';
+  document.getElementById('cam-video').style.display='block';
+  document.getElementById('cam-save-btn').style.display='none';
+  document.getElementById('cam-shoot-btn').style.display='flex';
+  document.getElementById('cam-retake-btn').style.display='none';
+  document.getElementById('cam-right-placeholder').style.display='block';
+  document.getElementById('cam-flip-btn').style.display='flex';
+  document.getElementById('cam-label-overlay').style.display='block';
+  setCamType(camType);
+  await startCamStream();
+}
+async function startCamStream() {
+  stopCamStream();
+  try {
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing==='user'?'user':'environment',width:{ideal:1080},height:{ideal:1920}},audio:false});
+    document.getElementById('cam-video').srcObject=camStream;
+  } catch(e){ showToast('カメラにアクセスできません'); closeCamera(); }
+}
+function stopCamStream(){ if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;} }
+function flipCamera(){ camFacing=camFacing==='user'?'environment':'user'; startCamStream(); }
+function shootPhoto() {
+  const video=document.getElementById('cam-video'), canvas=document.getElementById('cam-canvas');
+  canvas.width=video.videoWidth||720; canvas.height=video.videoHeight||1280;
+  const ctx=canvas.getContext('2d');
+  if(camFacing==='user'){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  capturedDataURL=canvas.toDataURL('image/jpeg',0.82);
+  document.getElementById('cam-preview').src=capturedDataURL;
+  document.getElementById('cam-preview').style.display='block';
+  document.getElementById('cam-video').style.display='none';
+  document.getElementById('cam-label-overlay').style.display='none';
+  document.getElementById('cam-save-btn').style.display='block';
+  document.getElementById('cam-shoot-btn').style.display='none';
+  document.getElementById('cam-retake-btn').style.display='flex';
+  document.getElementById('cam-right-placeholder').style.display='none';
+  document.getElementById('cam-flip-btn').style.display='none';
+}
+function retakePhoto() {
+  capturedDataURL=null;
+  document.getElementById('cam-preview').style.display='none';
+  document.getElementById('cam-video').style.display='block';
+  document.getElementById('cam-label-overlay').style.display='block';
+  document.getElementById('cam-save-btn').style.display='none';
+  document.getElementById('cam-shoot-btn').style.display='flex';
+  document.getElementById('cam-retake-btn').style.display='none';
+  document.getElementById('cam-right-placeholder').style.display='block';
+  document.getElementById('cam-flip-btn').style.display='flex';
+}
+async function savePhoto() {
+  if(!capturedDataURL) return;
+  const rec={date:dateStr(new Date()),type:camType,dataURL:capturedDataURL,ts:Date.now()};
+  await dbAdd('photos',rec); allPhotos.push(rec);
+  closeCamera(); renderPhotosTab();
+  showToast((camType==='front'?'前面':'背面')+'写真を保存しました ✓');
+  const other=camType==='front'?'back':'front';
+  const todayStr=dateStr(new Date());
+  if(!allPhotos.some(p=>p.date===todayStr&&p.type===other)){
+    setTimeout(()=>{ if(confirm((other==='front'?'前面':'背面')+'の写真も撮りますか？')) openCamera(other); },600);
+  }
+}
+function closeCamera(){ stopCamStream(); capturedDataURL=null; document.getElementById('cam-overlay').classList.add('hidden'); }
+
+// ===================== TIMER =====================
+function setTimer(sec,el){
+  timerSec=sec; timerMax=sec;
+  if(timerRunning){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-btn').textContent='スタート';}
+  document.querySelectorAll('.tpbtn').forEach(b=>b.classList.remove('sel'));
+  if(el) el.classList.add('sel');
+  updateTimerDisplay();
+}
+function toggleTimer(){
+  if(timerRunning){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-btn').textContent='スタート';}
+  else {
+    if(timerSec===0){timerSec=timerMax;updateTimerDisplay();}
+    timerRunning=true; document.getElementById('timer-btn').textContent='一時停止';
+    timerInterval=setInterval(()=>{
+      timerSec--; updateTimerDisplay();
+      if(timerSec<=0){
+        clearInterval(timerInterval); timerRunning=false;
+        document.getElementById('timer-btn').textContent='スタート';
+        document.getElementById('timer-display').style.color='var(--accent)';
+        if('vibrate' in navigator) navigator.vibrate([200,100,200]);
+        setTimeout(()=>{document.getElementById('timer-display').style.color='var(--text)';timerSec=timerMax;updateTimerDisplay();},3000);
+      }
+    },1000);
+  }
+}
+function resetTimer(){ clearInterval(timerInterval);timerRunning=false;timerSec=timerMax;document.getElementById('timer-btn').textContent='スタート';document.getElementById('timer-display').style.color='var(--text)';updateTimerDisplay(); }
+function updateTimerDisplay(){ const m=Math.floor(timerSec/60),s=timerSec%60; document.getElementById('timer-display').textContent=m+':'+String(s).padStart(2,'0'); }
+
+// ===================== UTILS =====================
+function dateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function esc(s){ return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+init();
+</script>
+</body>
+</html>
